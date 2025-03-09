@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This team project aims to develop a Deep Q-Network (DQN) reinforcement learning model for automated stock trading using historical S&P 500 data. We're starting with a focused approach and will gradually expand our scope as we validate our methods.
+This 2-person project aims to develop a Deep Q-Network (DQN) reinforcement learning model for automated stock trading using historical S&P 500 data. We're starting with a focused approach and will gradually expand our scope as we validate our methods.
 
 ## Dataset
 
@@ -13,6 +13,7 @@ We're using the [S&P 500 dataset from Kaggle](https://www.kaggle.com/datasets/ca
 - Date range covering 5+ years of market activity
 
 ## Project Goals
+
 
 ### Phase 1: Single-Stock Model
 - Train a DQN model on historical data for a single company (Apple - AAPL)
@@ -51,7 +52,7 @@ Our DQN implementation includes:
 - **Network Architecture**: Deep neural network with fully connected layers
 - **Experience Replay**: To improve stability and sample efficiency
 - **Target Network**: To reduce overestimation of Q-values
-- **$\epsilon$-greedy**: To balance exploration-exploitation
+- **$\epsilon$-Greedy Policy**: To balance exploration and exploitation
 
 ## Evaluation Metrics
 
@@ -74,9 +75,10 @@ Our DQN implementation includes:
 ## Project Structure
 
 ```
-reinforcemnet-learning-model-for-stock-trading/
-├── dataset/              # Raw and processed data
-└── requirements.txt      # Dependencies
+stock-trading-dqn/
+├── dataset/                        
+│   ├── individual_companies/
+└── README.md
 ```
 
 ## Future Directions
@@ -87,6 +89,6 @@ reinforcemnet-learning-model-for-stock-trading/
 - Develop ensemble strategies combining multiple approaches
 - Test on higher frequency data
 
-## Ackwoledgements
+## Acknowledgements
 
-This repository was created by Andreea Maria Monete and Vlad Florin Filip
+This project was created by Andreea Maria Monete and Vlad Florin Filip
