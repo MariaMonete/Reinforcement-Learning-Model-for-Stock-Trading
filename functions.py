@@ -6,7 +6,7 @@ import os
 import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
 
-def prepare_stock_data(csv_path, start_date=None, end_date=None, feature_engineering=True, standardize=True, plot=False):
+def prepare_stock_data(csv_path, start_date=None, end_date=None, feature_engineering=True, standardize=True, plot=False, threshold = 0.7):
     """
     Clean and prepare stock data from a CSV file for use in a DQN trading model.
     
@@ -149,10 +149,30 @@ def prepare_stock_data(csv_path, start_date=None, end_date=None, feature_enginee
     print(f"Annualized Return: {annualized_return:.2f}%")
     print(f"Sharpe Ratio (assuming risk-free rate of 0): {(annualized_return / (df_clean['return_close'].std() * np.sqrt(252) * 100)):.4f}")
 
+    correlation_matrix = df_state.corr()
+    correlation_matrix_abs = correlation_matrix.abs()
+    strong_correlations = (correlation_matrix_abs >= threshold) & (correlation_matrix_abs < 1)
+    strong_pairs = set()
+    for i in correlation_matrix.columns:
+        for j in correlation_matrix.columns:
+            if strong_correlations.loc[i, j]:
+                if i < j:
+                    strong_pairs.add((i, j))
+    print("\nStrong Correlations above threshold:")
+    print(strong_pairs)
+
+    # Remove features over teh threshold for the correlation matrix
+    columns_to_remove = set()
+    for i, j in strong_pairs:
+        if j not in columns_to_remove:
+            columns_to_remove.add(j)
+    print(columns_to_remove)
+    df_state = df_state.drop(columns=columns_to_remove)
+    state_columns = [col for col in state_columns if col not in columns_to_remove]
+
     if plot:
         plt.figure(figsize=(12, 10))
-        correlation_matrix = df_state.corr()
-        sns.heatmap(correlation_matrix, annot=False, cmap='coolwarm', center=0)
+        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0, fmt='.2f', cbar=False)
         plt.title('Feature Correlation Matrix')
         plt.tight_layout()
         
