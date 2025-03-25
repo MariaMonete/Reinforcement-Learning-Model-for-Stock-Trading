@@ -85,7 +85,7 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df):
         done = False
         while not done and state_index<len(df)-1:
             print(f"Step {steps}, State Index: {state_index}/{len(df)}")
-###fordebugging
+
             steps+=1
             # Choose action using epsilon greedy policy
             action = epsilon_greedy_policy(model, state, epsilon)
@@ -97,7 +97,7 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df):
 
             current_price=df.iloc[state_index]["return_close"]
             next_price=df.iloc[next_index]["return_close"]
-###de uitat
+
             if action == 0:  # Buy
                 reward = next_price - current_price  # Profit/Loss from buying
             elif action == 1:  # Sell
@@ -131,7 +131,6 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df):
         
         print(f"Episode {e+1}/{episodes}, Total Reward: {total_reward:.2f}, Epsilon: {epsilon:.4f}, Steps: {steps}")
    
-
 def create_target_network(model):
     """
     Create a target network as a copy of the main DQN model.
@@ -176,4 +175,5 @@ def update_target_network(model, target_model, tau=1.0):
             updated_w = tau * main_w + (1 - tau) * target_w
             updated_weights.append(updated_w)
             
+
         target_model.set_weights(updated_weights)
