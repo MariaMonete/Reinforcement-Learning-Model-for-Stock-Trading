@@ -97,13 +97,13 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df):
 
             current_price=df.iloc[state_index]["return_close"]
             next_price=df.iloc[next_index]["return_close"]
-
+###de uitat
             if action == 0:  # Buy
                 reward = next_price - current_price  # Profit/Loss from buying
             elif action == 1:  # Sell
                 reward = current_price - next_price  # Profit/Loss from selling
             else:  # Hold
-                reward = 0  # No action so no reward
+                reward = (next_price - current_price) * 0.1  # No action so no reward
             
             # Update the value Q (DQN using Bellman Equation)
             q_values = model.predict(state)
