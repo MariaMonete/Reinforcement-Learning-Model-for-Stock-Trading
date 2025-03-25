@@ -174,6 +174,5 @@ def update_target_network(model, target_model, tau=1.0):
         for main_w, target_w in zip(main_weights, target_weights):
             updated_w = tau * main_w + (1 - tau) * target_w
             updated_weights.append(updated_w)
-            
 
         target_model.set_weights(updated_weights)
