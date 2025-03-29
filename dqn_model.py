@@ -102,7 +102,7 @@ def epsilon_greedy_policy(model, state, epsilon):
 
 df = prepare_stock_data("dataset/individual_companies/AAPL_data.csv")
 
-def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, batch_size=32, buffer_size=10000):
+def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, batch_size=32, buffer_size=10000, alpha=0.6, beta_start=0.4, beta_end=1.0):
     """
 
     Train the agent using Q-learning and epsilon-greedy policy
@@ -118,7 +118,13 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
     """
 
     target_model = create_target_network(model)
-    replay_buffer = ReplayBuffer(buffer_size)
+
+    replay_buffer = ReplayBuffer(
+        buffer_size=buffer_size,
+        alpha=alpha,
+        beta=beta_start,
+        beta_increment=(beta_end - beta_start) / episodes  # Gradually increase beta to 1
+    )
 
     max_no_steps=500
     for e in range(episodes):
@@ -131,7 +137,8 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
         
         done = False
         while not done and state_index<len(df)-1:
-            print(f"Step {steps}, State Index: {state_index}/{len(df)}")
+            if steps % 50 == 0:
+                print(f"Episode {e+1}, Step {steps}, State Index: {state_index}/{len(df)}")
 
             steps+=1
             # Choose action using epsilon greedy policy
@@ -163,7 +170,7 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
 
             if replay_buffer.size() >= batch_size:
                 # Sample batch from replay buffer
-                states, actions, rewards, next_states, dones = replay_buffer.sample(batch_size)
+                states, actions, rewards, next_states, dones, indices, weights = replay_buffer.sample(batch_size)
                 
                 # Reshape for model prediction
                 states = states.reshape(batch_size, -1)
@@ -172,16 +179,30 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
                 # Compute target Q-values
                 current_q_values = model.predict(states)
                 next_q_values = target_model.predict(next_states)
+
+                # Initialize TD errors
+                td_errors = np.zeros(batch_size)
                 
                 # Update Q-values
                 for i in range(batch_size):
+                    old_val = current_q_values[i][actions[i]]
+                    
                     if dones[i]:
-                        current_q_values[i][actions[i]] = rewards[i]
+                        target = rewards[i]
                     else:
-                        current_q_values[i][actions[i]] = rewards[i] + gamma * np.max(next_q_values[i])
+                        target = rewards[i] + gamma * np.max(next_q_values[i])
+                    
+                    # Store TD error for updating priorities
+                    td_errors[i] = abs(target - old_val)
+                    
+                    # Update Q-value with importance sampling weight
+                    current_q_values[i][actions[i]] = old_val + weights[i] * (target - old_val)
                 
                 # Train on batch
-                model.fit(states, current_q_values, verbose=0)
+                model.fit(states, current_q_values, verbose=0, batch_size=batch_size, epochs=1)
+
+                # Update priorities in the replay buffer
+                replay_buffer.update_priorities(indices, td_errors)
         
             if steps % 100 == 0:
                 update_target_network(model, target_model)
