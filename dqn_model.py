@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Flatten
 from tensorflow.keras.optimizers import Adam
@@ -126,6 +127,10 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
         beta_increment=(beta_end - beta_start) / episodes  # Gradually increase beta to 1
     )
 
+    episode_rewards = []
+    epsilons = []
+    action_counts = [0, 0, 0]  # [Buy, Sell, Hold]
+
     max_no_steps=500
     for e in range(episodes):
 
@@ -143,6 +148,7 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
             steps+=1
             # Choose action using epsilon greedy policy
             action = epsilon_greedy_policy(model, state, epsilon)
+            action_counts[action] += 1
             
             # Execute the action and observe the next state and the reward
             next_index=state_index+1
@@ -156,11 +162,11 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
             elif action == 1:  # Sell
                 reward = current_price - next_price  # Profit/Loss from selling
             else:  # Hold
-                reward = (next_price - current_price) * 0.1  # No action so no reward
+                reward = (next_price - current_price) * 0.1 -0.01  #small penalty to discourage holding
 
             # Condition for stopping
             # Stop if we reach the end of the dataset
-            done = state_index >= max_no_steps - 2
+            done = state_index >= len(df)-1
 
             replay_buffer.add(state[0], action, reward, next_state[0], done)
             
@@ -207,7 +213,44 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
             if steps % 100 == 0:
                 update_target_network(model, target_model)
 
+        episode_rewards.append(total_reward)
+        epsilons.append(epsilon)
+
         # Reduce the value of epsilon after each episode for more exploitation\
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
         
         print(f"Episode {e+1}/{episodes}, Total Reward: {total_reward:.2f}, Epsilon: {epsilon:.4f}, Steps: {steps}")
+
+    # Plot results after training
+    plot_training_results(episode_rewards, epsilons, action_counts)
+
+def plot_training_results(rewards, epsilons, action_counts):
+    episodes = range(len(rewards))
+
+    plt.figure(figsize=(12, 4))
+
+    # Reward Plot
+    plt.subplot(1, 3, 1)
+    plt.plot(episodes, rewards, label="Total Reward")
+    plt.xlabel("Episode")
+    plt.ylabel("Reward")
+    plt.title("Reward Over Time")
+    plt.legend()
+
+    # Epsilon Decay
+    plt.subplot(1, 3, 2)
+    plt.plot(episodes, epsilons, label="Epsilon Decay", color="red")
+    plt.xlabel("Episode")
+    plt.ylabel("Epsilon")
+    plt.title("Epsilon Decay Over Time")
+    plt.legend()
+
+    # Action Distribution
+    plt.subplot(1, 3, 3)
+    plt.bar(["Buy", "Sell", "Hold"], action_counts, color=["green", "red", "blue"])
+    plt.xlabel("Action")
+    plt.ylabel("Count")
+    plt.title("Action Selection Distribution")
+
+    plt.tight_layout()
+    plt.show()

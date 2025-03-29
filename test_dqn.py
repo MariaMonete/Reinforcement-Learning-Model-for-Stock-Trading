@@ -9,7 +9,7 @@ state_size = len(state_columns)
 action_size = 3  # Buy, Sell, Hold
 model = create_dqn_model(state_size, action_size)
 
-episodes = 10  # Before was 100
+episodes = 50  # Before was 100
 epsilon = 0.9
 gamma = 0.95 
 epsilon_min = 0.01
