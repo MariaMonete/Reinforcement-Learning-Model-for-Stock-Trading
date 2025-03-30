@@ -269,7 +269,7 @@ def plot_training_results(rewards, epsilons, action_counts, cumulative_rewards):
     plt.tight_layout()
     plt.show()  # Show the first figure separately
 
-    # 🚀 Separate Figure for Cumulative Performance
+    # Separate Figure for Cumulative Performance
     plt.figure(figsize=(8, 4))
     plt.plot(range(len(cumulative_rewards)), cumulative_rewards, label="Cumulative Reward", color="purple")
     plt.xlabel("Step")
@@ -278,5 +278,3 @@ def plot_training_results(rewards, epsilons, action_counts, cumulative_rewards):
     plt.legend()
     plt.grid(True)  
     plt.show()
-
-    

@@ -1,17 +1,28 @@
+import argparse
 import numpy as np
 from functions import prepare_stock_data
 from dqn_model import create_dqn_model, train_dqn
 import os
 from datetime import datetime
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Train DQN model on stock data.")
+    
+    parser.add_argument("-sd", "--start_date", type=str, required=True, help="Start date in 'YYYY-MM-DD' format")
+    parser.add_argument("-ed", "--end_date", type=str, required=True, help="End date in 'YYYY-MM-DD' format")
+    
+    return parser.parse_args()
+
+args = parse_arguments()
+
 csv_path = "dataset/individual_companies/AAPL_data.csv"
-df_raw, df_state, state_columns, scaler = prepare_stock_data(csv_path)
+df_raw, df_state, state_columns, scaler = prepare_stock_data(csv_path, start_date=args.start_date, end_date=args.end_date)
 
 state_size = len(state_columns)  
 action_size = 3  # Buy, Sell, Hold
 model = create_dqn_model(state_size, action_size)
 
-episodes = 3
+episodes = 5
 epsilon = 0.9
 gamma = 0.95 
 epsilon_min = 0.01
