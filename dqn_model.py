@@ -131,6 +131,10 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
     epsilons = []
     action_counts = [0, 0, 0]  # [Buy, Sell, Hold]
 
+    #plot cumulative performance
+    cumulative_rewards=[]
+    total_cumulative_reward=0
+
     max_no_steps=500
     for e in range(episodes):
 
@@ -173,6 +177,10 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
             state = next_state
             state_index+=1
             total_reward += reward
+
+            #update cumulative rewards
+            total_cumulative_reward+=total_reward
+            cumulative_rewards.append(total_cumulative_reward)
 
             if replay_buffer.size() >= batch_size:
                 # Sample batch from replay buffer
@@ -222,9 +230,9 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
         print(f"Episode {e+1}/{episodes}, Total Reward: {total_reward:.2f}, Epsilon: {epsilon:.4f}, Steps: {steps}")
 
     # Plot results after training
-    plot_training_results(episode_rewards, epsilons, action_counts)
+    plot_training_results(episode_rewards, epsilons, action_counts, cumulative_rewards)
 
-def plot_training_results(rewards, epsilons, action_counts):
+def plot_training_results(rewards, epsilons, action_counts,cumulative_rewards):
     episodes = range(len(rewards))
 
     plt.figure(figsize=(12, 4))
@@ -235,6 +243,15 @@ def plot_training_results(rewards, epsilons, action_counts):
     plt.xlabel("Episode")
     plt.ylabel("Reward")
     plt.title("Reward Over Time")
+    plt.legend()
+
+    # Cumulative Reward Plot
+    plt.subplot(1, 4, 2)
+    plt.plot(range(len(cumulative_rewards)), cumulative_rewards, label="Cumulative Reward", color="purple")
+
+    plt.xlabel("Episode")
+    plt.ylabel("Cumulative Reward")
+    plt.title("Cumulative Performance Over Time")
     plt.legend()
 
     # Epsilon Decay
