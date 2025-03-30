@@ -235,4 +235,48 @@ if __name__ == "__main__":
     
     plt.show()
 
+import matplotlib.pyplot as plt
+
+def plot_training_results(rewards, epsilons, action_counts, cumulative_rewards):
+    episodes = range(len(rewards))
+
+    # First Figure: Reward, Epsilon Decay, and Action Distribution
+    plt.figure(figsize=(12, 4))
+
+    # Reward Plot
+    plt.subplot(1, 3, 1)
+    plt.plot(episodes, rewards, label="Total Reward")
+    plt.xlabel("Episode")
+    plt.ylabel("Reward")
+    plt.title("Reward Over Time")
+    plt.legend()
+
+    # Epsilon Decay
+    plt.subplot(1, 3, 2)
+    plt.plot(episodes, epsilons, label="Epsilon Decay", color="red")
+    plt.xlabel("Episode")
+    plt.ylabel("Epsilon")
+    plt.title("Epsilon Decay Over Time")
+    plt.legend()
+
+    # Action Distribution
+    plt.subplot(1, 3, 3)
+    plt.bar(["Buy", "Sell", "Hold"], action_counts, color=["green", "red", "blue"])
+    plt.xlabel("Action")
+    plt.ylabel("Count")
+    plt.title("Action Selection Distribution")
+
+    plt.tight_layout()
+    plt.show()  # Show the first figure separately
+
+    # 🚀 Separate Figure for Cumulative Performance
+    plt.figure(figsize=(8, 4))
+    plt.plot(range(len(cumulative_rewards)), cumulative_rewards, label="Cumulative Reward", color="purple")
+    plt.xlabel("Step")
+    plt.ylabel("Cumulative Reward")
+    plt.title("Cumulative Performance Over Time")
+    plt.legend()
+    plt.grid(True)  
+    plt.show()
+
     
