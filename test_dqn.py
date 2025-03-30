@@ -26,7 +26,7 @@ episodes = 5
 epsilon = 0.9
 gamma = 0.95 
 epsilon_min = 0.01
-epsilon_decay = 0.995
+epsilon_decay = 0.7
 
 print("Starting DQN training with epsilon-greedy policy...")
 train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df_state)

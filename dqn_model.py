@@ -134,9 +134,7 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
 
     #plot cumulative performance
     cumulative_rewards=[]
-    total_cumulative_reward=0
 
-    max_no_steps=500
     for e in range(episodes):
 
         # Reset state
@@ -144,6 +142,7 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
         state =  df.iloc[state_index].values.reshape(1, -1) #first real state
         total_reward = 0
         steps=0
+        position = 0
         
         done = False
         while not done and state_index<len(df)-1:
@@ -163,11 +162,22 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
             next_price=df.iloc[next_index]["return_close"]
 
             if action == 0:  # Buy
-                reward = next_price - current_price  # Profit/Loss from buying
+                if position <= 0:  # Only buy if not already long
+                    position = 1
+                    reward = next_price - current_price
+                else:
+                    reward = -0.001  # Small penalty for invalid action
             elif action == 1:  # Sell
-                reward = current_price - next_price  # Profit/Loss from selling
+                if position >= 0:  # Only sell if not already short
+                    position = -1
+                    reward = current_price - next_price
+                else:
+                    reward = -0.001  # Small penalty for invalid action
             else:  # Hold
-                reward = (next_price - current_price) * 0.1 -0.01  #small penalty to discourage holding
+                if position == 0:
+                    reward = 0  # No penalty for holding cash
+                else:
+                    reward = position * (next_price - current_price)  #small penalty to discourage holding
 
             # Condition for stopping
             # Stop if we reach the end of the dataset
@@ -180,8 +190,7 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
             total_reward += reward
 
             #update cumulative rewards
-            total_cumulative_reward+=total_reward
-            cumulative_rewards.append(total_cumulative_reward)
+            cumulative_rewards.append(total_reward)
 
             if replay_buffer.size() >= batch_size:
                 # Sample batch from replay buffer
@@ -232,6 +241,3 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
 
     # Plot results after training
     plot_training_results(episode_rewards, epsilons, action_counts, cumulative_rewards)
-
- 
-

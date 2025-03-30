@@ -237,15 +237,15 @@ if __name__ == "__main__":
 
 import matplotlib.pyplot as plt
 
-def plot_training_results(rewards, epsilons, action_counts, cumulative_rewards):
-    episodes = range(len(rewards))
+def plot_training_results(rewards_episode, epsilons, action_counts, cumulative_rewards, buy_hold_strategy):
+    episodes = range(len(rewards_episode))
 
     # First Figure: Reward, Epsilon Decay, and Action Distribution
     plt.figure(figsize=(12, 4))
 
     # Reward Plot
     plt.subplot(1, 3, 1)
-    plt.plot(episodes, rewards, label="Total Reward")
+    plt.plot(episodes, rewards_episode, label="Total Reward")
     plt.xlabel("Episode")
     plt.ylabel("Reward")
     plt.title("Reward Over Time")
@@ -271,7 +271,8 @@ def plot_training_results(rewards, epsilons, action_counts, cumulative_rewards):
 
     # Separate Figure for Cumulative Performance
     plt.figure(figsize=(8, 4))
-    plt.plot(range(len(cumulative_rewards)), cumulative_rewards, label="Cumulative Reward", color="purple")
+    plt.plot(range(len(cumulative_rewards)), cumulative_rewards, label="RL Agent", color="purple")
+    plt.plot(range(len(buy_hold_strategy)), buy_hold_strategy, label = "Benchmark", color= "organge")
     plt.xlabel("Step")
     plt.ylabel("Cumulative Reward")
     plt.title("Cumulative Performance Over Time")
