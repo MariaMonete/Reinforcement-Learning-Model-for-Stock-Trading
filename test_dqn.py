@@ -1,6 +1,8 @@
 import numpy as np
 from functions import prepare_stock_data
 from dqn_model import create_dqn_model, train_dqn
+import os
+from datetime import datetime
 
 csv_path = "dataset/individual_companies/AAPL_data.csv"
 df_raw, df_state, state_columns, scaler = prepare_stock_data(csv_path)
@@ -9,7 +11,7 @@ state_size = len(state_columns)
 action_size = 3  # Buy, Sell, Hold
 model = create_dqn_model(state_size, action_size)
 
-episodes = 50  # Before was 100
+episodes = 3
 epsilon = 0.9
 gamma = 0.95 
 epsilon_min = 0.01
@@ -17,6 +19,14 @@ epsilon_decay = 0.995
 
 print("Starting DQN training with epsilon-greedy policy...")
 train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df_state)
+
+# Save the model with a timestamp
+save_dir = "saved_models"
+os.makedirs(save_dir, exist_ok=True)
+timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+model_save_path = os.path.join(save_dir, f"dqn_trained_model_{timestamp}.h5")
+model.save(model_save_path)
+print(f"\nModel saved to {model_save_path}")
 
 # Test trained model
 print("\nTesting trained model on multiple sample states...")
