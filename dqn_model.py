@@ -106,7 +106,6 @@ df = prepare_stock_data("dataset/individual_companies/AAPL_data.csv")
 
 def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, batch_size=32, buffer_size=10000, alpha=0.6, beta_start=0.4, beta_end=1.0):
     """
-
     Train the agent using Q-learning and epsilon-greedy policy
 
     Parameters:
@@ -117,8 +116,10 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
     epsilon_min (float): Min value of epsilon
     epsilon_decay (float): Decay rate of epsilon
     df (pd.DataFrame): Stock market data
+    
+    Returns:
+    tuple: (episode_rewards, epsilons, action_counts, performance_history)
     """
-
     target_model = create_target_network(model)
 
     replay_buffer = ReplayBuffer(
@@ -131,35 +132,33 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
     episode_rewards = []
     epsilons = []
     action_counts = [0, 0, 0]  # [Buy, Sell, Hold]
-
-    #plot cumulative performance
-    cumulative_rewards=[]
+    performance_history = []  # Track performance over time
 
     for e in range(episodes):
-
         # Reset state
-        state_index=0 #first day
-        state =  df.iloc[state_index].values.reshape(1, -1) #first real state
+        state_index = 0  # first day
+        state = df.iloc[state_index].values.reshape(1, -1)  # first real state
         total_reward = 0
-        steps=0
+        steps = 0
         position = 0
+        episode_performance = []  # Track performance for this episode
         
         done = False
-        while not done and state_index<len(df)-1:
+        while not done and state_index < len(df)-1:
             if steps % 50 == 0:
                 print(f"Episode {e+1}, Step {steps}, State Index: {state_index}/{len(df)}")
 
-            steps+=1
+            steps += 1
             # Choose action using epsilon greedy policy
             action = epsilon_greedy_policy(model, state, epsilon)
             action_counts[action] += 1
             
             # Execute the action and observe the next state and the reward
-            next_index=state_index+1
-            next_state = df.iloc[next_index].values.reshape(1, -1) #next real state
+            next_index = state_index + 1
+            next_state = df.iloc[next_index].values.reshape(1, -1)  # next real state
 
-            current_price=df.iloc[state_index]["return_close"]
-            next_price=df.iloc[next_index]["return_close"]
+            current_price = df.iloc[state_index]["return_close"]
+            next_price = df.iloc[next_index]["return_close"]
 
             if action == 0:  # Buy
                 if position <= 0:  # Only buy if not already long
@@ -177,7 +176,7 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
                 if position == 0:
                     reward = 0  # No penalty for holding cash
                 else:
-                    reward = position * (next_price - current_price)  #small penalty to discourage holding
+                    reward = position * (next_price - current_price)  # small penalty to discourage holding
 
             # Condition for stopping
             # Stop if we reach the end of the dataset
@@ -186,11 +185,11 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
             replay_buffer.add(state[0], action, reward, next_state[0], done)
             
             state = next_state
-            state_index+=1
+            state_index += 1
             total_reward += reward
 
-            #update cumulative rewards
-            cumulative_rewards.append(total_reward)
+            # Track performance over time
+            episode_performance.append(total_reward)
 
             if replay_buffer.size() >= batch_size:
                 # Sample batch from replay buffer
@@ -233,11 +232,11 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
 
         episode_rewards.append(total_reward)
         epsilons.append(epsilon)
+        performance_history.append(episode_performance)  # Store episode performance
 
-        # Reduce the value of epsilon after each episode for more exploitation\
+        # Reduce the value of epsilon after each episode for more exploitation
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
         
         print(f"Episode {e+1}/{episodes}, Total Reward: {total_reward:.2f}, Epsilon: {epsilon:.4f}, Steps: {steps}")
 
-    # Plot results after training
-    plot_training_results(episode_rewards, epsilons, action_counts, cumulative_rewards)
+    return episode_rewards, epsilons, action_counts, performance_history

@@ -237,7 +237,17 @@ if __name__ == "__main__":
 
 import matplotlib.pyplot as plt
 
-def plot_training_results(rewards_episode, epsilons, action_counts, cumulative_rewards, buy_hold_strategy):
+def plot_training_results(rewards_episode, epsilons, action_counts, performance_history, benchmark_rewards=None):
+    """
+    Plot the training results including rewards, epsilon decay, action distribution, and cumulative performance.
+    
+    Parameters:
+    rewards_episode (list): List of total rewards per episode
+    epsilons (list): List of epsilon values over time
+    action_counts (list): Count of each action taken [Buy, Sell, Hold]
+    performance_history (list): List of performance trajectories for each episode
+    benchmark_rewards (list, optional): Benchmark performance for comparison
+    """
     episodes = range(len(rewards_episode))
 
     # First Figure: Reward, Epsilon Decay, and Action Distribution
@@ -269,13 +279,40 @@ def plot_training_results(rewards_episode, epsilons, action_counts, cumulative_r
     plt.tight_layout()
     plt.show()  # Show the first figure separately
 
-    # Separate Figure for Cumulative Performance
-    plt.figure(figsize=(8, 4))
-    plt.plot(range(len(cumulative_rewards)), cumulative_rewards, label="RL Agent", color="purple")
-    plt.plot(range(len(buy_hold_strategy)), buy_hold_strategy, label = "Benchmark", color= "organge")
-    plt.xlabel("Step")
-    plt.ylabel("Cumulative Reward")
-    plt.title("Cumulative Performance Over Time")
+    # Separate Figure for Performance Over Time
+    plt.figure(figsize=(12, 6))
+    
+    # Plot performance for each episode
+    for i, episode_performance in enumerate(performance_history):
+        plt.plot(range(len(episode_performance)), episode_performance, 
+                alpha=0.1, color='purple', label='Episode Performance' if i == 0 else None)
+    
+    # Plot average performance across episodes
+    avg_performance = np.mean(performance_history, axis=0)
+    plt.plot(range(len(avg_performance)), avg_performance, 
+            color='purple', linewidth=2, label='Average Performance')
+    
+    if benchmark_rewards is not None:
+        plt.plot(range(len(benchmark_rewards)), benchmark_rewards, 
+                color='orange', linewidth=2, label='Buy & Hold')
+    
+    plt.xlabel("Trading Day")
+    plt.ylabel("Cumulative Return")
+    plt.title("Performance Over Time")
     plt.legend()
-    plt.grid(True)  
+    plt.grid(True)
     plt.show()
+
+def calculate_buy_hold_performance(df):
+    """
+    Calculate the returns of a buy & hold strategy relative to the initial price.
+    
+    Parameters:
+    df (pd.DataFrame): DataFrame containing stock data
+    
+    Returns:
+    list: Returns over time relative to initial price
+    """
+    initial_price = df['close'].iloc[0]
+    returns = [(price - initial_price) / initial_price for price in df['close']]
+    return returns
