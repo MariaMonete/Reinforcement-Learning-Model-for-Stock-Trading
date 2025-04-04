@@ -58,8 +58,19 @@ def main():
         # Create a new model with the same architecture
         model = create_dqn_model(state_size, action_size)
         # Load the weights from the saved model
-        model.load_weights(args.model_path)
-        print("Model loaded successfully!")
+        try:
+            model.load_weights(args.model_path)
+            print("Model loaded successfully!")
+        except (ValueError, FileNotFoundError) as e:
+            # If the original path fails, try adding or removing .weights in the path
+            if ".weights.h5" in args.model_path:
+                alternative_path = args.model_path.replace(".weights.h5", ".h5")
+            else:
+                alternative_path = args.model_path.replace(".h5", ".weights.h5")
+            
+            print(f"Could not load model with original path. Trying alternative path: {alternative_path}")
+            model.load_weights(alternative_path)
+            print("Model loaded successfully with alternative path!")
         
         # Calculate benchmark performance
         benchmark_rewards = calculate_buy_hold_performance(df_raw)
@@ -85,9 +96,9 @@ def main():
         
         episodes = 50
         epsilon = 0.9
-        gamma = 0.95 
+        gamma = 0.98
         epsilon_min = 0.01
-        epsilon_decay = 0.85
+        epsilon_decay = 0.9
 
         print("Starting DQN training with epsilon-greedy policy...")
         episode_rewards, epsilons, action_counts, performance_history = train_dqn(
@@ -105,9 +116,17 @@ def main():
         os.makedirs(save_dir, exist_ok=True)
         timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         model_save_path = os.path.join(save_dir, f"dqn_trained_model_{timestamp}.h5")
-        # Save only the weights instead of the full model
-        model.save_weights(model_save_path)
-        print(f"\nModel weights saved to {model_save_path}")
+        
+        # Try to save with original extension first, if it fails use the explicit weights extension
+        try:
+            # Save only the weights instead of the full model
+            model.save_weights(model_save_path)
+            print(f"\nModel weights saved to {model_save_path}")
+        except ValueError as e:
+            # If original extension fails, try with explicit weights extension
+            model_save_path = os.path.join(save_dir, f"dqn_trained_model_{timestamp}.weights.h5")
+            model.save_weights(model_save_path)
+            print(f"\nModel weights saved to {model_save_path}")
 
         # Test model predictions
         test_model_predictions(model, df_state)

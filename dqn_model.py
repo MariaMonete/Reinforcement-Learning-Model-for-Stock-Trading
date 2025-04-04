@@ -24,7 +24,7 @@ def create_dqn_model(state_size, action_size, learning_rate=3e-5):
     """
     model = Sequential([
         Dense(64, activation='relu', input_shape=(state_size,)),
-        Dropout(0.2),
+        Dropout(0.3),
         Dense(64, activation='relu'),
         Dense(action_size, activation='linear')
     ])
@@ -80,25 +80,49 @@ def update_target_network(model, target_model, tau=1.0):
 
         target_model.set_weights(updated_weights)
 
-def epsilon_greedy_policy(model, state, epsilon):
+def epsilon_greedy_policy(model, state, epsilon, position=None):
     """
-    Epsilon-Greedy policy
+    Epsilon-Greedy policy with position-based action masking
     
     Parameters:
     model (tf.keras.Model): DQN model.
     state (np.ndarray): Current state.
     epsilon (float): Probability of exploration.
+    position (int, optional): Current position (1=long, -1=short, 0=no position).
     
     Returns:
     action (int): Index of chosen action.
     """
     if np.random.rand() <= epsilon:
-        # Exploration: random choice
-        action = np.random.choice(model.output_shape[1])
+        # Exploration: random choice with position constraints
+        if position is not None:
+            if position == 1:  # Already in long position
+                valid_actions = [1, 2]  # Can only sell or hold
+            elif position == -1:  # Already in short position
+                valid_actions = [0, 2]  # Can only buy or hold
+            else:  # No position
+                valid_actions = [0, 1, 2]  # Can do any action
+            action = np.random.choice(valid_actions)
+        else:
+            # If position is not provided, use regular random selection
+            action = np.random.choice(model.output_shape[1])
     else:
-        # Exploitation: action with biggest Q value
+        # Exploitation: action with biggest Q value, with position constraints
         q_values = model.predict(state)
-        action = np.argmax(q_values)
+        
+        if position is not None:
+            # Create a mask based on position
+            mask = np.ones(model.output_shape[1])
+            if position == 1:  # Already long
+                mask[0] = -np.inf  # Mask buy action
+            elif position == -1:  # Already short
+                mask[1] = -np.inf  # Mask sell action
+            
+            # Apply mask to q_values
+            masked_q_values = q_values + mask
+            action = np.argmax(masked_q_values)
+        else:
+            action = np.argmax(q_values)
     
     return action
 
@@ -149,8 +173,8 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
                 print(f"Episode {e+1}, Step {steps}, State Index: {state_index}/{len(df)}")
 
             steps += 1
-            # Choose action using epsilon greedy policy
-            action = epsilon_greedy_policy(model, state, epsilon)
+            # Choose action using epsilon greedy policy with position constraints
+            action = epsilon_greedy_policy(model, state, epsilon, position)
             action_counts[action] += 1
             
             # Execute the action and observe the next state and the reward
@@ -161,27 +185,37 @@ def train_dqn(model, episodes, epsilon, gamma, epsilon_min, epsilon_decay, df, b
             next_price = df.iloc[next_index]["return_close"]
 
             if action == 0:  # Buy
-                if position <= 0:  # Only buy if not already long
+                if position == 0:  # Only buy if no position
                     position = 1
                     reward = next_price - current_price
+                elif position == -1:  # Close short position
+                    position = 0
+                    reward = (current_price - next_price) * 0.5  # Partial reward for closing position
                 else:
-                    reward = -0.001  # Small penalty for invalid action
+                    # Should not happen with constraints, but just in case
+                    reward = -0.01  # Larger penalty for invalid action
             elif action == 1:  # Sell
-                if position >= 0:  # Only sell if not already short
+                if position == 0:  # Only sell if no position
                     position = -1
                     reward = current_price - next_price
+                elif position == 1:  # Close long position
+                    position = 0
+                    reward = (next_price - current_price) * 0.5  # Partial reward for closing position
                 else:
-                    reward = -0.001  # Small penalty for invalid action
+                    # Should not happen with constraints, but just in case
+                    reward = -0.01  # Larger penalty for invalid action
             else:  # Hold
                 if position == 0:
-                    reward = 0  # No penalty for holding cash
+                    reward = 0  # No reward/penalty for holding cash
                 else:
-                    reward = position * (next_price - current_price)  # small penalty to discourage holding
+                    # Reward based on position direction
+                    reward = position * (next_price - current_price)
 
             # Condition for stopping
             # Stop if we reach the end of the dataset
             done = state_index >= len(df)-1
 
+            # Add experience to replay buffer
             replay_buffer.add(state[0], action, reward, next_state[0], done)
             
             state = next_state

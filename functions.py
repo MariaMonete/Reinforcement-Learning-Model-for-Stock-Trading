@@ -240,6 +240,7 @@ import matplotlib.pyplot as plt
 def plot_training_results(rewards_episode, epsilons, action_counts, performance_history, benchmark_rewards=None):
     """
     Plot the training results including rewards, epsilon decay, action distribution, and cumulative performance.
+    Focuses on the last episode and average performance for more meaningful visualization.
     
     Parameters:
     rewards_episode (list): List of total rewards per episode
@@ -284,13 +285,14 @@ def plot_training_results(rewards_episode, epsilons, action_counts, performance_
     
     # Plot performance for each episode
     for i, episode_performance in enumerate(performance_history):
-        plt.plot(range(len(episode_performance)), episode_performance, 
-                alpha=0.1, color='purple', label='Episode Performance' if i == 0 else None)
+        if i == len(performance_history) - 1:
+            plt.plot(range(len(episode_performance)), episode_performance, 
+                    color='purple', label='Episode Performance')
     
     # Plot average performance across episodes
     avg_performance = np.mean(performance_history, axis=0)
     plt.plot(range(len(avg_performance)), avg_performance, 
-            color='purple', linewidth=2, label='Average Performance')
+            alpha=0.1, color='purple', linewidth=2, label='Average Performance')
     
     if benchmark_rewards is not None:
         plt.plot(range(len(benchmark_rewards)), benchmark_rewards, 
@@ -298,7 +300,7 @@ def plot_training_results(rewards_episode, epsilons, action_counts, performance_
     
     plt.xlabel("Trading Day")
     plt.ylabel("Cumulative Return")
-    plt.title("Performance Over Time")
+    plt.title("Performance Comparison")
     plt.legend()
     plt.grid(True)
     plt.show()
